@@ -1,0 +1,595 @@
+<!DOCTYPE html>
+<html lang="ja">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>My Target</title>
+    <style>
+        :root {
+            --primary: #007AFF;
+            --bg: #f2f2f7;
+            --card: #ffffff;
+            --text: #333;
+            --danger: #ff3b30;
+            --success: #34c759;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            margin: 0;
+            padding: 0;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        /* 共通レイアウト */
+        .screen {
+            display: none;
+            height: 100vh;
+            flex-direction: column;
+        }
+
+        .screen.active {
+            display: flex;
+        }
+
+        header {
+            background: var(--card);
+            padding: 15px;
+            text-align: center;
+            font-weight: bold;
+            border-bottom: 1px solid #ddd;
+            position: sticky;
+            top: 0;
+            z-index: 10;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .back-btn {
+            background: none;
+            border: none;
+            color: var(--primary);
+            font-size: 1rem;
+            cursor: pointer;
+        }
+
+        /* ホーム画面（Day一覧） */
+        .day-list {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+            overflow-y: auto;
+            flex: 1;
+        }
+
+        .day-item {
+            background: var(--card);
+            padding: 15px 20px;
+            border-bottom: 1px solid #eee;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        .day-item:active {
+            background: #e5e5ea;
+        }
+
+        .progress-circle {
+            font-size: 0.8rem;
+            color: #888;
+        }
+
+        .progress-circle.done {
+            color: var(--success);
+            font-weight: bold;
+        }
+
+        /* 学習画面 */
+        .study-container {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            padding: 20px;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+        }
+
+        .word-card {
+            background: var(--card);
+            width: 100%;
+            max-width: 400px;
+            border-radius: 16px;
+            padding: 30px 20px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            text-align: center;
+            margin-bottom: 20px;
+            position: relative;
+            min-height: 250px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
+
+        .word-en {
+            font-size: 2.5rem;
+            font-weight: 800;
+            margin-bottom: 10px;
+            color: #000;
+        }
+
+        .word-phonetic {
+            color: #666;
+            font-family: "Lucida Sans Unicode", sans-serif;
+            margin-bottom: 15px;
+            font-size: 0.9rem;
+        }
+
+        .word-ja {
+            font-size: 1.4rem;
+            font-weight: bold;
+            color: var(--primary);
+            margin: 15px 0;
+            display: none;
+        }
+
+        /* 初期は隠す */
+        .word-sentence {
+            font-size: 0.9rem;
+            color: #555;
+            margin-top: 15px;
+            text-align: left;
+            background: #f9f9f9;
+            padding: 10px;
+            border-radius: 8px;
+            display: none;
+        }
+
+        .word-sentence em {
+            font-weight: bold;
+            font-style: normal;
+            color: #000;
+        }
+
+        /* 4択クイズ用 */
+        .quiz-options {
+            width: 100%;
+            max-width: 400px;
+            display: none;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .quiz-btn {
+            background: var(--card);
+            border: 1px solid #ccc;
+            padding: 15px;
+            border-radius: 10px;
+            font-size: 1rem;
+            text-align: left;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+
+        .quiz-btn:active {
+            background: #ddd;
+        }
+
+        .quiz-btn.correct {
+            background: var(--success);
+            color: white;
+            border-color: var(--success);
+        }
+
+        .quiz-btn.wrong {
+            background: var(--danger);
+            color: white;
+            border-color: var(--danger);
+        }
+
+        /* コントロールエリア */
+        .controls {
+            display: flex;
+            gap: 15px;
+            width: 100%;
+            max-width: 400px;
+            justify-content: center;
+            margin-top: auto;
+            padding-bottom: 30px;
+        }
+
+        .btn {
+            flex: 1;
+            padding: 15px;
+            border: none;
+            border-radius: 30px;
+            font-weight: bold;
+            font-size: 1rem;
+            cursor: pointer;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+        }
+
+        .btn-answer {
+            background: var(--primary);
+            color: white;
+        }
+
+        .btn-next {
+            background: #333;
+            color: white;
+            display: none;
+        }
+
+        /* 初期は隠す */
+
+        .speaker-icon {
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            font-size: 1.5rem;
+            color: var(--primary);
+            cursor: pointer;
+        }
+
+        .check-area {
+            position: absolute;
+            top: 15px;
+            left: 15px;
+        }
+
+        .check-input {
+            transform: scale(1.5);
+        }
+
+        /* モード切替タブ */
+        .mode-tabs {
+            display: flex;
+            background: #e0e0e0;
+            border-radius: 10px;
+            padding: 3px;
+            margin: 10px auto;
+            width: 90%;
+            max-width: 300px;
+        }
+
+        .tab {
+            flex: 1;
+            text-align: center;
+            padding: 8px;
+            border-radius: 8px;
+            font-size: 0.9rem;
+            cursor: pointer;
+            color: #666;
+        }
+
+        .tab.active {
+            background: white;
+            color: var(--text);
+            font-weight: bold;
+            shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+    </style>
+</head>
+
+<body>
+
+    <div id="home-screen" class="screen active">
+        <header>
+            <span>My Target</span>
+            <span style="font-size:0.8rem; color:#666;" id="total-progress">0%</span>
+        </header>
+        <ul class="day-list" id="day-list">
+        </ul>
+    </div>
+
+    <div id="study-screen" class="screen">
+        <header>
+            <button class="back-btn" onclick="goHome()">‹ 戻る</button>
+            <span id="current-day-title">Day 1</span>
+            <span style="width:30px"></span>
+        </header>
+
+        <div class="mode-tabs">
+            <div class="tab active" onclick="setMode('card')">カード</div>
+            <div class="tab" onclick="setMode('quiz')">4択クイズ</div>
+        </div>
+
+        <div class="study-container">
+            <div class="word-card" id="word-card">
+                <div class="check-area">
+                    <input type="checkbox" class="check-input" id="memorized-check" onchange="toggleMemorized()">
+                </div>
+                <div class="speaker-icon" onclick="playAudio()">🔊</div>
+
+                <div class="word-en" id="disp-en">Apple</div>
+                <div class="word-phonetic" id="disp-phonetic">/ǽpl/</div>
+
+                <div class="word-ja" id="disp-ja">リンゴ</div>
+                <div class="word-sentence" id="disp-sentence">
+                    <div style="font-size:0.8rem; color:#888; margin-bottom:4px;">例文:</div>
+                    <span id="sentence-en">This is an apple.</span>
+                    <hr style="border:0; border-top:1px solid #eee; margin:5px 0;">
+                    <span id="sentence-ja" style="font-size:0.85rem; color:#666;">これはリンゴです</span>
+                </div>
+            </div>
+
+            <div class="quiz-options" id="quiz-options">
+                <button class="quiz-btn" onclick="checkQuiz(0)"></button>
+                <button class="quiz-btn" onclick="checkQuiz(1)"></button>
+                <button class="quiz-btn" onclick="checkQuiz(2)"></button>
+                <button class="quiz-btn" onclick="checkQuiz(3)"></button>
+            </div>
+
+            <div class="controls">
+                <button class="btn btn-answer" id="btn-action" onclick="handleAction()">答えを見る</button>
+                <button class="btn btn-next" id="btn-next" onclick="nextWord()">次へ</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // --- データ管理 ---
+        let allWords = [];
+        let currentDayWords = [];
+        let currentIndex = 0;
+        let currentMode = 'card'; // 'card' or 'quiz'
+        let memorizedData = JSON.parse(localStorage.getItem('myTargetMemorized')) || {};
+
+        // 起動時
+        window.onload = async function () {
+            try {
+                // data.jsonの読み込み
+                const response = await fetch('data.json');
+                allWords = await response.json();
+                renderDayList();
+            } catch (e) {
+                alert('data.jsonの読み込みに失敗しました。同じフォルダに配置してください。');
+            }
+        };
+
+        // ホーム画面: Dayリスト生成
+        function renderDayList() {
+            const list = document.getElementById('day-list');
+            list.innerHTML = '';
+
+            // Dayごとにグループ化
+            const days = {};
+            allWords.forEach(word => {
+                if (!days[word.day]) days[word.day] = [];
+                days[word.day].push(word);
+            });
+
+            // リスト表示
+            Object.keys(days).sort((a, b) => a - b).forEach(day => {
+                const words = days[day];
+                const count = words.length;
+                // 覚えた数
+                const doneCount = words.filter(w => memorizedData[w.id]).length;
+                const percent = Math.round((doneCount / count) * 100);
+
+                const li = document.createElement('li');
+                li.className = 'day-item';
+                li.innerHTML = `
+                <div>
+                    <span style="font-weight:bold; font-size:1.1rem;">Day ${day}</span>
+                    <span style="font-size:0.8rem; color:#666; margin-left:10px;">(${count}語)</span>
+                </div>
+                <div class="progress-circle ${percent === 100 ? 'done' : ''}">${percent}% 完了</div>
+            `;
+                li.onclick = () => startDay(day, words);
+                list.appendChild(li);
+            });
+
+            // 全体の進捗
+            const totalDone = Object.keys(memorizedData).length;
+            const totalPercent = Math.round((totalDone / allWords.length) * 100);
+            document.getElementById('total-progress').innerText = `Total: ${totalPercent}%`;
+        }
+
+        // 学習開始
+        function startDay(day, words) {
+            currentDayWords = words;
+            currentIndex = 0;
+
+            document.getElementById('home-screen').classList.remove('active');
+            document.getElementById('study-screen').classList.add('active');
+            document.getElementById('current-day-title').innerText = `Day ${day}`;
+
+            showWord();
+        }
+
+        // ホームに戻る
+        function goHome() {
+            document.getElementById('study-screen').classList.remove('active');
+            document.getElementById('home-screen').classList.add('active');
+            renderDayList(); // 進捗更新のため再描画
+        }
+
+        // モード切替
+        function setMode(mode) {
+            currentMode = mode;
+            document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+            document.querySelectorAll('.tab')[mode === 'card' ? 0 : 1].classList.add('active');
+
+            // 画面リセット
+            showWord();
+        }
+
+        /**
+         * 【修正箇所】
+         * 単語を指定して「覚えた」としてマークし、保存する
+         */
+        function markAsMemorized(wordId) {
+            if (!memorizedData[wordId]) {
+                memorizedData[wordId] = true;
+                localStorage.setItem('myTargetMemorized', JSON.stringify(memorizedData));
+
+                // 現在表示中の単語であればチェックボックスも同期させる
+                const currentItem = currentDayWords[currentIndex];
+                if (currentItem && currentItem.id === wordId) {
+                    document.getElementById('memorized-check').checked = true;
+                }
+            }
+        }
+
+
+        // 単語表示（共通）
+        function showWord() {
+            if (currentIndex >= currentDayWords.length) {
+                alert('このDayは終了です！');
+                goHome();
+                return;
+            }
+
+            const item = currentDayWords[currentIndex];
+
+            // DOM要素
+            const elEn = document.getElementById('disp-en');
+            const elPhonetic = document.getElementById('disp-phonetic');
+            const elJa = document.getElementById('disp-ja');
+            const elSent = document.getElementById('disp-sentence');
+            const elSentEn = document.getElementById('sentence-en');
+            const elSentJa = document.getElementById('sentence-ja');
+            const check = document.getElementById('memorized-check');
+            const quizArea = document.getElementById('quiz-options');
+            const btnAction = document.getElementById('btn-action');
+            const btnNext = document.getElementById('btn-next');
+
+            // データセット
+            elEn.innerText = item.en;
+            elPhonetic.innerText = item.phonetic || "";
+            elJa.innerText = item.ja;
+
+            // 例文がある場合
+            if (item.sentence) {
+                elSentEn.innerText = item.sentence;
+                elSentJa.innerText = item.sentence_ja || "";
+            } else {
+                elSentEn.innerText = "No example sentence.";
+                elSentJa.innerText = "";
+            }
+
+            // チェックボックス状態
+            check.checked = !!memorizedData[item.id];
+
+            // 状態リセット
+            elJa.style.display = 'none';
+            elSent.style.display = 'none';
+            btnNext.style.display = 'none';
+            btnAction.style.display = 'block';
+            btnAction.innerText = '答えを見る';
+            btnAction.disabled = false;
+
+            // モード別表示
+            if (currentMode === 'card') {
+                quizArea.style.display = 'none';
+            } else {
+                // クイズモード
+                quizArea.style.display = 'flex';
+                btnAction.style.display = 'none'; // クイズではボタンではなく選択肢を押す
+                generateQuiz(item);
+            }
+        }
+
+        // クイズ生成
+        function generateQuiz(correctItem) {
+            // ダミーの選択肢を3つ選ぶ（同じDay内または全体から）
+            const others = allWords.filter(w => w.id !== correctItem.id);
+            const dummies = [];
+            while (dummies.length < 3) {
+                const r = others[Math.floor(Math.random() * others.length)];
+                if (!dummies.includes(r)) dummies.push(r);
+            }
+
+            // 正解を含めてシャッフル
+            const options = [correctItem, ...dummies].sort(() => Math.random() - 0.5);
+
+            // ボタンにセット
+            const btns = document.querySelectorAll('.quiz-btn');
+            btns.forEach((btn, i) => {
+                btn.innerText = options[i].ja;
+                btn.className = 'quiz-btn'; // クラスリセット
+                btn.disabled = false; // 無効化リセット
+                btn.onclick = () => {
+                    // 全てのボタンを無効化（二重押し防止）
+                    btns.forEach(b => b.disabled = true);
+
+                    // 正解判定
+                    if (options[i].id === correctItem.id) {
+                        btn.classList.add('correct');
+                        markAsMemorized(correctItem.id); // ★クイズ正解時に覚えたことにする★
+                        playAudio(); // 正解したら発音
+                    } else {
+                        btn.classList.add('wrong');
+                        // 正解も表示してあげる
+                        const correctIndex = options.findIndex(o => o.id === correctItem.id);
+                        btns[correctIndex].classList.add('correct');
+                    }
+                    revealAnswer();
+                };
+            });
+        }
+
+        // アクションボタン（カードモード用）
+        function handleAction() {
+            playAudio();
+            revealAnswer();
+        }
+
+        // 答えを表示する処理
+        function revealAnswer() {
+            document.getElementById('disp-ja').style.display = 'block';
+            document.getElementById('disp-sentence').style.display = 'block';
+
+            document.getElementById('btn-action').style.display = 'none';
+            document.getElementById('btn-next').style.display = 'block';
+        }
+
+        // 次へ
+        function nextWord() {
+            currentIndex++;
+            showWord();
+        }
+
+        // 音声再生 (Web Speech API)
+        function playAudio() {
+            const item = currentDayWords[currentIndex];
+            if (!item) return;
+
+            // 英語の発話設定
+            const u = new SpeechSynthesisUtterance(item.en);
+            u.lang = 'en-US';
+            u.rate = 1.0; // 速度
+            speechSynthesis.cancel(); // 前のをキャンセルして
+            speechSynthesis.speak(u); // 再生
+        }
+
+        /**
+         * 【修正箇所】
+         * 覚えたチェックの保存（markAsMemorized()を使用するように変更）
+         */
+        function toggleMemorized() {
+            const item = currentDayWords[currentIndex];
+            const check = document.getElementById('memorized-check');
+
+            if (check.checked) {
+                markAsMemorized(item.id);
+            } else {
+                // 覚えた状態を解除
+                if (memorizedData[item.id]) {
+                    delete memorizedData[item.id];
+                    localStorage.setItem('myTargetMemorized', JSON.stringify(memorizedData));
+                }
+            }
+        }
+    </script>
+</body>
+
+</html>
